@@ -1,5 +1,5 @@
 /*
-   Snake Game.   
+   Snake Game.
 */
 
 #include <Gamby.h>
@@ -24,11 +24,15 @@ PROGMEM prog_uint16_t palette[] = {
 unsigned long lastInputTime; // The time at which gamby.readInputs() was last called
 byte lastInputs;    // The state of the inputs the last time they were checked.
 
+// Bring in the font from the other tab (font.ino)
+extern prog_int32_t font[];
+
 void setup() {
   gamby.palette = palette;
+  gamby.font = font;
   showSplashScreen();
   randomSeed(millis());
-  startGame();  
+  startGame();
 }
 
 void loop() {
@@ -54,6 +58,12 @@ void startGame() {
 // Display the splash screen and wait for the user to press a button.
 void showSplashScreen() {
   gamby.clearDisplay();
+
+  gamby.setPos(0,2);
+  gamby.print("SNAAAAAAKE!");
+
+  gamby.setPos(0,7);
+  gamby.print("Press any button to begin!");
 
   // Wait for a button to be pressed before continuing
   gamby.readInputs();
