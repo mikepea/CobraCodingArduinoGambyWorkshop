@@ -64,12 +64,15 @@ void loop() {
       // do stuff with inputs
       lastInputTime = millis() + INPUT_DELAY;
     }
+
   } else {
     delay(100);
     gamby.readInputs();
     if (gamby.inputs)
       startGame();
+
   }
+
 }
 
 void startGame() {
