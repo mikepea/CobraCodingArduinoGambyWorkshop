@@ -30,6 +30,11 @@ const byte START_Y = 8;
 
 const byte INPUT_DELAY = 50;
 
+const byte LEFT = 1;
+const byte RIGHT = 2;
+const byte UP = 3;
+const byte DOWN = 4;
+
 // the 'block' bitmaps we can use.
 PROGMEM prog_uint16_t palette[] = {
   0x0000, //  0: Empty
@@ -39,6 +44,7 @@ PROGMEM prog_uint16_t palette[] = {
 // friendly names for common palette blocks:
 const byte EMPTY_BLOCK = 0;
 const byte WALL_BLOCK = 1;
+const byte SNAKE_HEAD_BLOCK = 1;
 
 unsigned long lastInputTime; // The time at which gamby.readInputs() was last called
 byte lastInputs;    // The state of the inputs the last time they were checked.
@@ -48,6 +54,10 @@ extern prog_int32_t font[];
 
 int score = 0;
 int hiscore = 50;
+
+byte snakeLastHeadPosition = 120;
+byte snakeHeadPosition = 120;
+byte snakeDirection = RIGHT;
 
 void setup() {
   gamby.palette = palette;
@@ -74,7 +84,25 @@ bool checkForAnyButtonPressWithDelay(int ms_to_wait) {
     return 0;
 }
 
+byte checkForDirectionButtonPress() {
+
+  if (millis() > lastInputTime) {
+    gamby.readInputs();
+    lastInputTime = millis() + INPUT_DELAY;
+    if (gamby.inputs != lastInputs) {
+      lastInputs = gamby.inputs;
+      if (gamby.inputs & DPAD_LEFT) {
+        return LEFT;
+      } else if (gamby.inputs & DPAD_RIGHT) {
+        return RIGHT;
+      } else if (gamby.inputs & DPAD_DOWN) {
+        return DOWN;
+      } else if (gamby.inputs & DPAD_UP) {
+        return UP;
+      }
+    }
   }
+  return 0;
 
 }
 
@@ -138,6 +166,44 @@ void startGame() {
 }
 
 void playGame() {
+  byte direction = checkForDirectionButtonPress();
+  if ( direction ) {
+    snakeDirection = direction;
+  }
+  moveSnake();
+}
+
+void moveSnake() {
+  snakeLastHeadPosition = snakeHeadPosition;
+  if ( snakeDirection == LEFT ) {
+    snakeHeadPosition = snakeHeadPosition - 1;
+  } else if ( snakeDirection == RIGHT ) {
+    snakeHeadPosition = snakeHeadPosition + 1;
+  } else if ( snakeDirection == UP ) {
+    snakeHeadPosition = snakeHeadPosition - ROOM_WIDTH;
+  } else if ( snakeDirection == DOWN ) {
+    snakeHeadPosition = snakeHeadPosition + ROOM_WIDTH;
+  }
+
+  emptyLocation(snakeLastHeadPosition);
+  drawSnakeHead(snakeHeadPosition);
+
+}
+
+byte getScreenX(byte pos) {
+  return pos % ROOM_WIDTH;
+}
+
+byte getScreenY(byte pos) {
+  return pos / ROOM_WIDTH;
+}
+
+void emptyLocation(byte pos) {
+  gamby.drawBlock(getScreenX(pos), getScreenY(pos), EMPTY_BLOCK);
+}
+
+void drawSnakeHead(byte pos) {
+  gamby.drawBlock(getScreenX(pos), getScreenY(pos), SNAKE_HEAD_BLOCK);
 }
 
 void snakeDeath() {
