@@ -10,10 +10,10 @@ boolean playing;    // 'true' when the game is playing, 'false' after game over
 // block mode -- saves memory, and snake is pretty blocky!
 GambyBlockMode gamby;
 
-const byte ROOM_WIDTH = 18;
-const byte ROOM_HEIGHT = 16;
+const byte ROOM_WIDTH = 16;
+const byte ROOM_HEIGHT = 14;
 
-const byte SCORELABEL_X = ROOM_WIDTH*4+2;
+const byte SCORELABEL_X = (ROOM_WIDTH+2)*4+2;
 const byte SCORELABEL_Y = 6;
 
 const byte SCOREPOS_X = SCORELABEL_X;
@@ -24,9 +24,6 @@ const byte HISCORELABEL_Y = 0;
 
 const byte HISCOREPOS_X = SCORELABEL_X;
 const byte HISCOREPOS_Y = HISCORELABEL_Y + 1;
-
-const byte START_X = 8;
-const byte START_Y = 8;
 
 const byte INPUT_DELAY = 50;
 
@@ -114,17 +111,17 @@ void showGameStartScreen() {
 
 void drawRoom() {
   // The room sides
-  for (byte i=0; i<ROOM_HEIGHT; i++) {
+  for (byte i=0; i<(ROOM_HEIGHT+2); i++) {
     gamby.setBlock(0,i,WALL_BLOCK);
-    gamby.setBlock(ROOM_WIDTH-1, i, WALL_BLOCK);
+    gamby.setBlock(ROOM_WIDTH+1, i, WALL_BLOCK);
   }
   // The room top and bottom
-  for (byte i=0; i<ROOM_WIDTH; i++) {
+  for (byte i=0; i<(ROOM_WIDTH+2); i++) {
     gamby.setBlock(i, 0, WALL_BLOCK);
-    gamby.setBlock(i, ROOM_HEIGHT-1, WALL_BLOCK);
+    gamby.setBlock(i, ROOM_HEIGHT+1, WALL_BLOCK);
   }
   // setBlock doesn't actually draw. .update does.
-  gamby.update(0,0,ROOM_WIDTH-1,ROOM_HEIGHT-1);
+  gamby.update(0,0,ROOM_WIDTH+1,ROOM_HEIGHT+1);
 }
 
 void updateInfoDisplay() {
@@ -190,12 +187,20 @@ void moveSnake() {
 
 }
 
+byte getRoomX(byte pos) {
+  return (pos % ROOM_WIDTH);
+}
+
 byte getScreenX(byte pos) {
-  return pos % ROOM_WIDTH;
+  return getRoomX(pos) + 1;
+}
+
+byte getRoomY(byte pos) {
+  return (pos / ROOM_WIDTH);
 }
 
 byte getScreenY(byte pos) {
-  return pos / ROOM_WIDTH;
+  return getRoomY(pos) + 1;
 }
 
 void emptyLocation(byte pos) {
