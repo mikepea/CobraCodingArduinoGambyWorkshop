@@ -5,8 +5,6 @@
 #include <Gamby.h>
 #include <avr/pgmspace.h>
 
-boolean playing;    // 'true' when the game is playing, 'false' after game over
-
 // block mode -- saves memory, and snake is pretty blocky!
 GambyBlockMode gamby;
 
