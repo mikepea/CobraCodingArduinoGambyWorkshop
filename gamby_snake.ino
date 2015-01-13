@@ -32,6 +32,9 @@ const byte RIGHT = 2;
 const byte UP = 3;
 const byte DOWN = 4;
 
+const byte INITIAL_HEAD_POS = 120;
+const int  INITIAL_MOVE_DELAY = 200;
+
 // the 'block' bitmaps we can use.
 PROGMEM prog_uint16_t palette[] = {
   0x0000, //  0: Empty
@@ -52,9 +55,12 @@ extern prog_int32_t font[];
 int score = 0;
 int hiscore = 50;
 
-byte snakeLastHeadPosition = 120;
-byte snakeHeadPosition = 120;
+byte snakeLastHeadPosition = INITIAL_HEAD_POS;
+byte snakeHeadPosition = INITIAL_HEAD_POS;
+int  snakeMoveDelay = INITIAL_MOVE_DELAY;
+long lastSnakeMoveTime = 0;
 byte snakeDirection = RIGHT;
+bool snakeIsAlive = 1;
 
 void setup() {
   gamby.palette = palette;
@@ -66,6 +72,9 @@ void setup() {
 void loop() {
   randomSeed(millis());
   showGameStartScreen();
+
+  startGame();
+
   playGame();
 
   checkForAnyButtonPressWithDelay(100);
@@ -159,27 +168,56 @@ void showInitialSplashScreen() {
 }
 
 void startGame() {
-  
+  snakeMoveDelay = INITIAL_MOVE_DELAY;
+  snakeLastHeadPosition = INITIAL_HEAD_POS;
+  snakeHeadPosition = INITIAL_HEAD_POS;
+  snakeDirection = RIGHT;
 }
 
 void playGame() {
-  byte direction = checkForDirectionButtonPress();
-  if ( direction ) {
-    snakeDirection = direction;
+  while ( snakeIsAlive ) {
+    byte direction = checkForDirectionButtonPress();
+    if ( direction ) {
+      snakeDirection = direction;
+    }
+    if ( millis() - lastSnakeMoveTime > snakeMoveDelay ) {
+      lastSnakeMoveTime = millis();
+      moveSnake();
+    }
   }
-  moveSnake();
+  snakeDeath();
+}
+
+void snakeHasDied() {
+  snakeIsAlive = 0;
 }
 
 void moveSnake() {
   snakeLastHeadPosition = snakeHeadPosition;
   if ( snakeDirection == LEFT ) {
-    snakeHeadPosition = snakeHeadPosition - 1;
+    if ( getRoomX(snakeHeadPosition) == 0 ) {
+      snakeHasDied();
+    } else {
+      snakeHeadPosition = snakeHeadPosition - 1;
+    }
   } else if ( snakeDirection == RIGHT ) {
-    snakeHeadPosition = snakeHeadPosition + 1;
+    if ( getRoomX(snakeHeadPosition) == ROOM_WIDTH - 1 ) {
+      snakeHasDied();
+    } else {
+      snakeHeadPosition = snakeHeadPosition + 1;
+    }
   } else if ( snakeDirection == UP ) {
-    snakeHeadPosition = snakeHeadPosition - ROOM_WIDTH;
+    if ( getRoomY(snakeHeadPosition) == 0 ) {
+      snakeHasDied();
+    } else {
+      snakeHeadPosition = snakeHeadPosition - ROOM_WIDTH;
+    }
   } else if ( snakeDirection == DOWN ) {
-    snakeHeadPosition = snakeHeadPosition + ROOM_WIDTH;
+    if ( getRoomY(snakeHeadPosition) == ROOM_HEIGHT - 1 ) {
+      snakeHasDied();
+    } else {
+      snakeHeadPosition = snakeHeadPosition + ROOM_WIDTH;
+    }
   }
 
   emptyLocation(snakeLastHeadPosition);
@@ -212,6 +250,10 @@ void drawSnakeHead(byte pos) {
 }
 
 void snakeDeath() {
+  gamby.setPos(16,5);
+  gamby.print("SQUASHED!");
+  delay(1000);
+  snakeIsAlive = 1;
 }
 
 void showScore() {
