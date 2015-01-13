@@ -52,51 +52,51 @@ int hiscore = 50;
 void setup() {
   gamby.palette = palette;
   gamby.font = font;
-  showSplashScreen();
-  randomSeed(millis());
-  startGame();
+  showInitialSplashScreen();
+  delay(1000);
 }
 
 void loop() {
-  if (playing) {
-    if (millis() > lastInputTime) {
-      gamby.readInputs();
-      // do stuff with inputs
-      lastInputTime = millis() + INPUT_DELAY;
-    }
+  randomSeed(millis());
+  showGameStartScreen();
+  playGame();
 
-  } else {
-    delay(100);
-    gamby.readInputs();
-    if (gamby.inputs)
-      startGame();
+  checkForAnyButtonPressWithDelay(100);
+
+}
+
+bool checkForAnyButtonPressWithDelay(int ms_to_wait) {
+  delay(ms_to_wait);
+  gamby.readInputs();
+  if (gamby.inputs)
+    return 1;
+  else
+    return 0;
+}
 
   }
 
 }
 
-void startGame() {
-  byte i;
+void showGameStartScreen() {
   gamby.clearScreen();
+  drawRoom();
+  setupInfoDisplay();
+}
 
+void drawRoom() {
   // The room sides
-  for (i=0; i<ROOM_HEIGHT; i++) {
+  for (byte i=0; i<ROOM_HEIGHT; i++) {
     gamby.setBlock(0,i,WALL_BLOCK);
     gamby.setBlock(ROOM_WIDTH-1, i, WALL_BLOCK);
   }
   // The room top and bottom
-  for (i=0; i<ROOM_WIDTH; i++) {
+  for (byte i=0; i<ROOM_WIDTH; i++) {
     gamby.setBlock(i, 0, WALL_BLOCK);
     gamby.setBlock(i, ROOM_HEIGHT-1, WALL_BLOCK);
   }
-
   // setBlock doesn't actually draw. .update does.
   gamby.update(0,0,ROOM_WIDTH-1,ROOM_HEIGHT-1);
-
-  // Print the info display
-  setupInfoDisplay();
-
-  playing = true;
 }
 
 void updateInfoDisplay() {
@@ -115,7 +115,7 @@ void setupInfoDisplay() {
 }
 
 // Display the splash screen and wait for the user to press a button.
-void showSplashScreen() {
+void showInitialSplashScreen() {
   gamby.clearDisplay();
 
   gamby.setPos(0,2);
@@ -131,4 +131,17 @@ void showSplashScreen() {
     delay(100);
     gamby.readInputs();
   }
+}
+
+void startGame() {
+  
+}
+
+void playGame() {
+}
+
+void snakeDeath() {
+}
+
+void showScore() {
 }
