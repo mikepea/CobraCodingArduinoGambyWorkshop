@@ -179,17 +179,20 @@ void startGame() {
   snakeDirection = RIGHT;
 }
 
+bool reversingDirection(byte actualDirection, byte intendedDirection) {
+  if ( actualDirection == LEFT && intendedDirection == RIGHT ) { return true; }
+  if ( actualDirection == RIGHT && intendedDirection == LEFT ) { return true; }
+  if ( snakeDirection == UP && intendedDirection == DOWN )     { return true; }
+  if ( snakeDirection == DOWN && intendedDirection == UP )     { return true; }
+  return false;
+}
+
 void playGame() {
   while ( snakeIsAlive ) {
-    byte direction = checkForDirectionButtonPress();
-    if ( direction ) {
-      if (! (
-           ( snakeDirection == LEFT && direction == RIGHT ) ||
-           ( snakeDirection == RIGHT && direction == LEFT ) ||
-           ( snakeDirection == UP && direction == DOWN ) ||
-           ( snakeDirection == DOWN && direction == UP )
-           ) ) {
-        snakeDirection = direction;
+    byte intendedDirection = checkForDirectionButtonPress();
+    if ( intendedDirection ) {
+      if (! reversingDirection(snakeDirection, intendedDirection) ) {
+        snakeDirection = intendedDirection;
       }
     }
     if ( millis() - lastSnakeMoveTime > snakeMoveDelay ) {
