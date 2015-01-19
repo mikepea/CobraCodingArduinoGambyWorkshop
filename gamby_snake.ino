@@ -30,7 +30,8 @@ const byte RIGHT = 2;
 const byte UP = 3;
 const byte DOWN = 4;
 
-const byte INITIAL_HEAD_POS = 120;
+const byte INITIAL_HEAD_SQUARE = 120;
+const byte INITIAL_TAIL_SQUARE = 119;
 const int  INITIAL_MOVE_DELAY = 200;
 
 // the 'block' bitmaps we can use.
@@ -53,12 +54,16 @@ extern prog_int32_t font[];
 int score = 0;
 int hiscore = 50;
 
-byte snakeLastHeadPosition = INITIAL_HEAD_POS;
-byte snakeHeadPosition = INITIAL_HEAD_POS;
+byte snakeHeadBufferPosition;
+byte snakeTailBufferPosition;
 int  snakeMoveDelay = INITIAL_MOVE_DELAY;
 long lastSnakeMoveTime = 0;
 byte snakeDirection = RIGHT;
 bool snakeIsAlive = 1;
+
+const byte SNAKE_BUFFER_SIZE = 32;
+const byte MAX_SNAKE_LENGTH = 16;
+byte snakeBuffer[SNAKE_BUFFER_SIZE];
 
 void setup() {
   gamby.palette = palette;
@@ -167,8 +172,10 @@ void showInitialSplashScreen() {
 
 void startGame() {
   snakeMoveDelay = INITIAL_MOVE_DELAY;
-  snakeLastHeadPosition = INITIAL_HEAD_POS;
-  snakeHeadPosition = INITIAL_HEAD_POS;
+  snakeTailBufferPosition = 0;
+  snakeHeadBufferPosition = 1;
+  snakeBuffer[snakeTailBufferPosition] = INITIAL_TAIL_SQUARE;
+  snakeBuffer[snakeHeadBufferPosition] = INITIAL_HEAD_SQUARE;
   snakeDirection = RIGHT;
 }
 
@@ -190,37 +197,68 @@ void snakeHasDied() {
   snakeIsAlive = 0;
 }
 
+byte getNextBufferPosition(byte bufPos) {
+  return ( bufPos + 1 ) % SNAKE_BUFFER_SIZE;
+}
+
+void updateSnakeHeadSquare(byte snakeHeadSquare) {
+  snakeBuffer[snakeHeadBufferPosition] = snakeHeadSquare;
+}
+
 void moveSnake() {
-  snakeLastHeadPosition = snakeHeadPosition;
+  byte snakeHeadSquare = snakeBuffer[snakeHeadBufferPosition];
+  snakeHeadBufferPosition = getNextBufferPosition(snakeHeadBufferPosition);
   if ( snakeDirection == LEFT ) {
-    if ( getRoomX(snakeHeadPosition) == 0 ) {
+    if ( getRoomX(snakeHeadSquare) == 0 ) {
       snakeHasDied();
     } else {
-      snakeHeadPosition = snakeHeadPosition - 1;
+      updateSnakeHeadSquare(snakeHeadSquare - 1);
     }
   } else if ( snakeDirection == RIGHT ) {
-    if ( getRoomX(snakeHeadPosition) == ROOM_WIDTH - 1 ) {
+    if ( getRoomX(snakeHeadSquare) == ROOM_WIDTH - 1 ) {
       snakeHasDied();
     } else {
-      snakeHeadPosition = snakeHeadPosition + 1;
+      updateSnakeHeadSquare(snakeHeadSquare + 1);
     }
   } else if ( snakeDirection == UP ) {
-    if ( getRoomY(snakeHeadPosition) == 0 ) {
+    if ( getRoomY(snakeHeadSquare) == 0 ) {
       snakeHasDied();
     } else {
-      snakeHeadPosition = snakeHeadPosition - ROOM_WIDTH;
+      updateSnakeHeadSquare(snakeHeadSquare - ROOM_WIDTH);
     }
   } else if ( snakeDirection == DOWN ) {
-    if ( getRoomY(snakeHeadPosition) == ROOM_HEIGHT - 1 ) {
+    if ( getRoomY(snakeHeadSquare) == ROOM_HEIGHT - 1 ) {
       snakeHasDied();
     } else {
-      snakeHeadPosition = snakeHeadPosition + ROOM_WIDTH;
+      updateSnakeHeadSquare(snakeHeadSquare + ROOM_WIDTH);
     }
   }
 
-  emptyLocation(snakeLastHeadPosition);
-  drawSnakeHead(snakeHeadPosition);
+  if ( moveTailSquare() ) {
+    emptyLocation(snakeBuffer[snakeTailBufferPosition]);
+    snakeTailBufferPosition = getNextBufferPosition(snakeTailBufferPosition);
+  }
+  drawSnakeHead(snakeBuffer[snakeHeadBufferPosition]);
 
+}
+
+byte snakeLength() {
+  if ( snakeHeadBufferPosition > snakeTailBufferPosition ) {
+    return snakeHeadBufferPosition - snakeTailBufferPosition + 1;
+  } else {
+    return ( snakeHeadBufferPosition + SNAKE_BUFFER_SIZE ) - snakeTailBufferPosition + 1;
+  }
+}
+
+bool moveTailSquare() {
+  if ( snakeLength() >= MAX_SNAKE_LENGTH ) {
+    return true;
+  }
+  if ( random(16) <= 1 ) {
+     return false;
+  } else {
+    return true;
+  }
 }
 
 byte getRoomX(byte pos) {
