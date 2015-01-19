@@ -223,6 +223,20 @@ bool snakeWillCollideWithEdge(byte head, byte dir) {
   return false;
 }
 
+byte getRelativePosition(byte pos, byte dir) {
+  if ( dir == LEFT ) {
+    return (pos - 1);
+  } else if ( dir == RIGHT ) {
+    return (pos + 1);
+  } else if ( dir == UP ) {
+    return (pos - ROOM_WIDTH);
+  } else if ( dir == DOWN ) {
+    return (pos + ROOM_WIDTH);
+  } else {
+    return pos; // invalid direction provided.
+  }
+}
+
 void moveSnake() {
   byte snakeHeadSquare = snakeBuffer[snakeHeadBufferPosition];
   snakeHeadBufferPosition = getNextBufferPosition(snakeHeadBufferPosition);
@@ -232,15 +246,8 @@ void moveSnake() {
     return;
   }
 
-  if ( snakeDirection == LEFT ) {
-    updateSnakeHeadSquare(snakeHeadSquare - 1);
-  } else if ( snakeDirection == RIGHT ) {
-    updateSnakeHeadSquare(snakeHeadSquare + 1);
-  } else if ( snakeDirection == UP ) {
-    updateSnakeHeadSquare(snakeHeadSquare - ROOM_WIDTH);
-  } else if ( snakeDirection == DOWN ) {
-    updateSnakeHeadSquare(snakeHeadSquare + ROOM_WIDTH);
-  }
+  byte nextHeadSquare = getRelativePosition(snakeHeadSquare, snakeDirection);
+  updateSnakeHeadSquare(nextHeadSquare);
 
   if ( moveTailSquare() ) {
     emptyLocation(snakeBuffer[snakeTailBufferPosition]);
