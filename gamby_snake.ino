@@ -183,7 +183,14 @@ void playGame() {
   while ( snakeIsAlive ) {
     byte direction = checkForDirectionButtonPress();
     if ( direction ) {
-      snakeDirection = direction;
+      if (! (
+           ( snakeDirection == LEFT && direction == RIGHT ) ||
+           ( snakeDirection == RIGHT && direction == LEFT ) ||
+           ( snakeDirection == UP && direction == DOWN ) ||
+           ( snakeDirection == DOWN && direction == UP )
+           ) ) {
+        snakeDirection = direction;
+      }
     }
     if ( millis() - lastSnakeMoveTime > snakeMoveDelay ) {
       lastSnakeMoveTime = millis();
