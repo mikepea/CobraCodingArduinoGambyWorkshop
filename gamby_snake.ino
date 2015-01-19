@@ -218,24 +218,28 @@ void moveSnake() {
   if ( snakeDirection == LEFT ) {
     if ( getRoomX(snakeHeadSquare) == 0 ) {
       snakeHasDied();
+      return;
     } else {
       updateSnakeHeadSquare(snakeHeadSquare - 1);
     }
   } else if ( snakeDirection == RIGHT ) {
     if ( getRoomX(snakeHeadSquare) == ROOM_WIDTH - 1 ) {
       snakeHasDied();
+      return;
     } else {
       updateSnakeHeadSquare(snakeHeadSquare + 1);
     }
   } else if ( snakeDirection == UP ) {
     if ( getRoomY(snakeHeadSquare) == 0 ) {
       snakeHasDied();
+      return;
     } else {
       updateSnakeHeadSquare(snakeHeadSquare - ROOM_WIDTH);
     }
   } else if ( snakeDirection == DOWN ) {
     if ( getRoomY(snakeHeadSquare) == ROOM_HEIGHT - 1 ) {
       snakeHasDied();
+      return;
     } else {
       updateSnakeHeadSquare(snakeHeadSquare + ROOM_WIDTH);
     }
