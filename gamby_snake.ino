@@ -207,11 +207,12 @@ void snakeHasDied() {
   snakeIsAlive = 0;
 }
 
-byte getNextBufferPosition(byte bufPos) {
-  return ( bufPos + 1 ) % SNAKE_BUFFER_SIZE;
+byte getRealBufferPosition(byte bufPos) {
+  return ( bufPos ) % SNAKE_BUFFER_SIZE;
 }
 
 void updateSnakeHeadSquare(byte snakeHeadSquare) {
+  snakeHeadBufferPosition = getRealBufferPosition(snakeHeadBufferPosition + 1);
   snakeBuffer[snakeHeadBufferPosition] = snakeHeadSquare;
 }
 
@@ -239,7 +240,6 @@ byte getRelativePosition(byte pos, byte dir) {
 
 void moveSnake() {
   byte snakeHeadSquare = snakeBuffer[snakeHeadBufferPosition];
-  snakeHeadBufferPosition = getNextBufferPosition(snakeHeadBufferPosition);
 
   if ( snakeWillCollideWithEdge(snakeHeadSquare, snakeDirection) ) {
     snakeHasDied();
@@ -251,9 +251,9 @@ void moveSnake() {
 
   if ( moveTailSquare() ) {
     emptyLocation(snakeBuffer[snakeTailBufferPosition]);
-    snakeTailBufferPosition = getNextBufferPosition(snakeTailBufferPosition);
+    snakeTailBufferPosition = getRealBufferPosition(snakeTailBufferPosition + 1);
   }
-  drawSnakeHead(snakeBuffer[snakeHeadBufferPosition]);
+  drawSnakeHead();
 
 }
 
@@ -296,8 +296,9 @@ void emptyLocation(byte pos) {
   gamby.drawBlock(getScreenX(pos), getScreenY(pos), EMPTY_BLOCK);
 }
 
-void drawSnakeHead(byte pos) {
-  gamby.drawBlock(getScreenX(pos), getScreenY(pos), SNAKE_HEAD_BLOCK);
+void drawSnakeHead() {
+  byte headSquare = snakeBuffer[snakeHeadBufferPosition];
+  gamby.drawBlock(getScreenX(headSquare), getScreenY(headSquare), SNAKE_HEAD_BLOCK);
 }
 
 void snakeDeath() {
