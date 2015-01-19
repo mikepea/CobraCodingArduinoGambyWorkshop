@@ -215,37 +215,31 @@ void updateSnakeHeadSquare(byte snakeHeadSquare) {
   snakeBuffer[snakeHeadBufferPosition] = snakeHeadSquare;
 }
 
+bool snakeWillCollideWithEdge(byte head, byte dir) {
+  if ( snakeDirection == LEFT  && getRoomX(head) == 0 ) { return true; }
+  if ( snakeDirection == RIGHT && getRoomX(head) == ROOM_WIDTH - 1 ) { return true; }
+  if ( snakeDirection == UP    && getRoomY(head) == 0 ) { return true; }
+  if ( snakeDirection == DOWN  && getRoomY(head) == ROOM_HEIGHT - 1 ) { return true; }
+  return false;
+}
+
 void moveSnake() {
   byte snakeHeadSquare = snakeBuffer[snakeHeadBufferPosition];
   snakeHeadBufferPosition = getNextBufferPosition(snakeHeadBufferPosition);
+
+  if ( snakeWillCollideWithEdge(snakeHeadSquare, snakeDirection) ) {
+    snakeHasDied();
+    return;
+  }
+
   if ( snakeDirection == LEFT ) {
-    if ( getRoomX(snakeHeadSquare) == 0 ) {
-      snakeHasDied();
-      return;
-    } else {
-      updateSnakeHeadSquare(snakeHeadSquare - 1);
-    }
+    updateSnakeHeadSquare(snakeHeadSquare - 1);
   } else if ( snakeDirection == RIGHT ) {
-    if ( getRoomX(snakeHeadSquare) == ROOM_WIDTH - 1 ) {
-      snakeHasDied();
-      return;
-    } else {
-      updateSnakeHeadSquare(snakeHeadSquare + 1);
-    }
+    updateSnakeHeadSquare(snakeHeadSquare + 1);
   } else if ( snakeDirection == UP ) {
-    if ( getRoomY(snakeHeadSquare) == 0 ) {
-      snakeHasDied();
-      return;
-    } else {
-      updateSnakeHeadSquare(snakeHeadSquare - ROOM_WIDTH);
-    }
+    updateSnakeHeadSquare(snakeHeadSquare - ROOM_WIDTH);
   } else if ( snakeDirection == DOWN ) {
-    if ( getRoomY(snakeHeadSquare) == ROOM_HEIGHT - 1 ) {
-      snakeHasDied();
-      return;
-    } else {
-      updateSnakeHeadSquare(snakeHeadSquare + ROOM_WIDTH);
-    }
+    updateSnakeHeadSquare(snakeHeadSquare + ROOM_WIDTH);
   }
 
   if ( moveTailSquare() ) {
