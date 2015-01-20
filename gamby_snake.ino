@@ -140,6 +140,9 @@ void drawRoom() {
 }
 
 void updateInfoDisplay() {
+  if ( score > hiscore ) {
+    hiscore = score;
+  }
   gamby.setPos(HISCOREPOS_X,HISCOREPOS_Y);
   gamby.print(hiscore);
   gamby.setPos(SCOREPOS_X,SCOREPOS_Y);
@@ -180,6 +183,7 @@ void startGame() {
   snakeBuffer[snakeTailBufferPosition] = INITIAL_TAIL_SQUARE;
   snakeBuffer[snakeHeadBufferPosition] = INITIAL_HEAD_SQUARE;
   snakeDirection = RIGHT;
+  score = 0;
   drawFruit();
 }
 
@@ -260,6 +264,7 @@ void moveSnake() {
   if ( nextHeadSquare == fruitSquare ) {
     score += 10;
     drawFruit();
+    updateInfoDisplay();
   } else {
     emptyLocation(snakeBuffer[snakeTailBufferPosition]);
     snakeTailBufferPosition = getRealBufferPosition(snakeTailBufferPosition + 1);
