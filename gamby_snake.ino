@@ -247,6 +247,12 @@ void moveSnake() {
   }
 
   byte nextHeadSquare = getRelativePosition(snakeHeadSquare, snakeDirection);
+
+  if ( checkIfSquareIsWithinSnake(nextHeadSquare) ) {
+    snakeHasDied();
+    return;
+  }
+
   updateSnakeHeadSquare(nextHeadSquare);
 
   if ( moveTailSquare() ) {
@@ -255,6 +261,17 @@ void moveSnake() {
   }
   drawSnakeHead();
 
+}
+
+bool checkIfSquareIsWithinSnake(byte square) {
+  byte i = 0;
+  while ( i < snakeLength() ) {
+    if ( square == snakeBuffer[getRealBufferPosition(snakeTailBufferPosition + i)] ) {
+      return true;
+    }
+    i++;
+  }
+  return false;
 }
 
 byte snakeLength() {
