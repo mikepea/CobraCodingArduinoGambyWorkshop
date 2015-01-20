@@ -44,6 +44,7 @@ PROGMEM prog_uint16_t palette[] = {
 const byte EMPTY_BLOCK = 0;
 const byte WALL_BLOCK = 1;
 const byte SNAKE_HEAD_BLOCK = 1;
+const byte FRUIT_BLOCK = 1;
 
 unsigned long lastInputTime; // The time at which gamby.readInputs() was last called
 byte lastInputs;    // The state of the inputs the last time they were checked.
@@ -61,8 +62,10 @@ long lastSnakeMoveTime = 0;
 byte snakeDirection = RIGHT;
 bool snakeIsAlive = 1;
 
-const byte SNAKE_BUFFER_SIZE = 32;
-const byte MAX_SNAKE_LENGTH = 16;
+byte fruitSquare;
+
+const byte SNAKE_BUFFER_SIZE = 64;
+const byte MAX_SNAKE_LENGTH = 62;
 byte snakeBuffer[SNAKE_BUFFER_SIZE];
 
 void setup() {
@@ -177,6 +180,7 @@ void startGame() {
   snakeBuffer[snakeTailBufferPosition] = INITIAL_TAIL_SQUARE;
   snakeBuffer[snakeHeadBufferPosition] = INITIAL_HEAD_SQUARE;
   snakeDirection = RIGHT;
+  drawFruit();
 }
 
 bool reversingDirection(byte actualDirection, byte intendedDirection) {
@@ -253,14 +257,26 @@ void moveSnake() {
     return;
   }
 
-  updateSnakeHeadSquare(nextHeadSquare);
-
-  if ( moveTailSquare() ) {
+  if ( nextHeadSquare == fruitSquare ) {
+    score += 10;
+    drawFruit();
+  } else {
     emptyLocation(snakeBuffer[snakeTailBufferPosition]);
     snakeTailBufferPosition = getRealBufferPosition(snakeTailBufferPosition + 1);
   }
+
+  updateSnakeHeadSquare(nextHeadSquare);
+
   drawSnakeHead();
 
+}
+
+byte pickFruitSquare() {
+  byte potentialFruitSquare = random(ROOM_HEIGHT*ROOM_WIDTH);
+  if ( checkIfSquareIsWithinSnake(potentialFruitSquare) ) {
+    potentialFruitSquare = pickFruitSquare();
+  }
+  return potentialFruitSquare;
 }
 
 bool checkIfSquareIsWithinSnake(byte square) {
@@ -311,6 +327,11 @@ byte getScreenY(byte pos) {
 
 void emptyLocation(byte pos) {
   gamby.drawBlock(getScreenX(pos), getScreenY(pos), EMPTY_BLOCK);
+}
+
+void drawFruit() {
+  fruitSquare = pickFruitSquare();
+  gamby.drawBlock(getScreenX(fruitSquare), getScreenY(fruitSquare), FRUIT_BLOCK);
 }
 
 void drawSnakeHead() {
