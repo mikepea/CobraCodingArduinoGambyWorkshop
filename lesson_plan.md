@@ -255,29 +255,139 @@ The gamby library can 'scan' which buttons are currently pressed. This populates
 
 Then, in a while-loop, we keep reading the inputs variable until it is *different* from what we initially read - indicating that a new button has been pressed.
 
-Urg, sorry. Now that we've wrapped that pretty gnarly code up in a function though, we can forget about how it works!
+Urg, sorry. Now that we''ve wrapped that pretty gnarly code up in a function though, we can forget about how it works!
 
 
 ## Lesson 7 - Drawing our game room.
 
+We now need to draw our 'game room' - the screen that we''re going to play the snake game in.
+
+This consists of a box for the snake to roam around in, and some text to tell us what the score
+and hiscore is.
+
+We need to get our blockMode block palette into our sketch, so:
+
+* Save your sketch as 'Lesson7-GameRoom'
+* Open up the _Templates->GambyBlockMode example
+* Cut and paste the following sections over into your sketch:
+
+```
+#include <avr/pgmspace.h>
+
+PROGMEM prog_uint16_t palette[] = {
+    0x0000, //  0 All 'white' (block 0 should almost always be 0x0000)
+    0xffff, //  1 All 'black'
+    0x5a5a, //  2 50% gray dither
+    0xfaf5, //  3 75% gray dither
+    0x050a, //  4 25% gray dither
+    0xedb7, //  5 Light diagonal left line
+    0x1248, //  6 Dark diagonal left line
+    0x7bde, //  7 Light diagonal right line
+    0x8421, //  8 Dark diagonal right line
+    0x888f, //  9 Dark-on-light solid grid lines
+    0x1110, // 10 Light-on-dark solid grid lines
+    0xa080, // 11 Light-on-dark dotted grid lines
+    0x5f1f, // 12 Dark-on-light dotted grid lines
+    0x33cc, // 13 Checker pattern
+    0xcc33, // 14 Mirrored checker pattern
+    0x0001  // 15 Single pixel (upper right)
+};
+```
+
+In the `setup()` function, add the following line at the start, to make the pallet above available:
+
+```
+  gamby.palette = palette;
+```
+
+Now, lets make our game room.
+
+Gamby provides a useful 'box' function that will draw us the outline of a box on the
+screen, in a 'block' type of our choice.
+
 ````
 void drawRoom() {
-  // The room sides
-  for (byte i=0; i<(ROOM_HEIGHT+2); i++) {
-    gamby.setBlock(0,i,WALL_BLOCK);
-    gamby.setBlock(ROOM_WIDTH+1, i, WALL_BLOCK);
-  }
-  // The room top and bottom
-  for (byte i=0; i<(ROOM_WIDTH+2); i++) {
-    gamby.setBlock(i, 0, WALL_BLOCK);
-    gamby.setBlock(i, ROOM_HEIGHT+1, WALL_BLOCK);
-  }
-  // setBlock doesn't actually draw. .update does.
-  gamby.update(0,0,ROOM_WIDTH+1,ROOM_HEIGHT+1);
+  gamby.clearDisplay();
+  gamby.box(0, 0, 17, 15, 2);   // x1, y1, x2, y2, palette
 }
 ````
 
-## Lesson 7 - How do we move something about in our room?
+Add this to the main loop, so it becomes:
+
+````
+void loop () {
+  showInitialSplashScreen();
+  waitForButtonPress();
+  drawRoom();
+  delay(500);
+  waitForButtonPress();
+}
+````
+
+Lets worry about the scoreboard later. Note that we''ve left some space for it on the right.
+
+Hit Save!
+
+## Lesson 8 - How do we move something about in our room?
+
+Save our current sketch as 'Lesson8-Spider'
+
+Before we think about a snake, let''s just move a 'spider' around the room. He''s simpler, as we
+can show him with a single block.
+
+Our 'room', inside the box, is 16 blocks wide and 14 blocks high. So, a bit of maths:
+
+* we have 16 x 14 = 224 'squares' in our room.
+
+This is nice, because it means we can store the location of our spider in a really small
+amount of memory -- a 'byte'. The Arduino only has 2048 bytes of memory, so we have to be
+pretty conservative about how we use it.
+
+So, let''s draw our spider:
+
+Feel free to just type this in:
+
+````
+byte spiderLocation = 112; // somewhere in the middle.
+
+const byte ROOM_WIDTH = 16;
+
+byte getRoomX(byte pos) {
+  return (pos % ROOM_WIDTH);
+}
+
+byte getScreenX(byte pos) {
+  return getRoomX(pos) + 1;
+}
+
+byte getRoomY(byte pos) {
+  return (pos / ROOM_WIDTH);
+}
+
+byte getScreenY(byte pos) {
+  return getRoomY(pos) + 1;
+}
+
+void drawSpider() {
+  byte headSquare = spiderLocation;
+  gamby.drawBlock(getScreenX(headSquare), getScreenY(headSquare), 1);
+}
+
+````
+
+And don''t forget to actually call `drawSpider()` in our main loop:
+
+````
+void loop() {
+  showInitialSplashScreen();
+  waitForButtonPress();
+  drawRoom();
+  drawSpider();
+  delay(1000);
+  waitForButtonPress();
+}
+````
+
 
 
 ## Lesson 8 - Colliding with the edges!
