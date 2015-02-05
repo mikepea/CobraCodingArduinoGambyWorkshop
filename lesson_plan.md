@@ -207,7 +207,7 @@ void showInitialSplashScreen() {
 
   gamby.setPos(0,7);
   gamby.println("Press any button to begin!");
-}	
+}
 ````
 
 Upload your code now. Nothing happens!
@@ -306,9 +306,12 @@ Gamby provides a useful 'box' function that will draw us the outline of a box on
 screen, in a 'block' type of our choice.
 
 ````
+const byte ROOM_WIDTH = 16;
+const byte ROOM_HEIGHT = 14;
+
 void drawRoom() {
   gamby.clearDisplay();
-  gamby.box(0, 0, 17, 15, 2);   // x1, y1, x2, y2, palette
+  gamby.box(0, 0, ROOM_WIDTH+1, ROOM_HEIGHT+1, 2);   // x1, y1, x2, y2, palette
 }
 ````
 
@@ -350,7 +353,6 @@ Feel free to just type this in:
 ````
 byte spiderLocation = 112; // somewhere in the middle.
 
-const byte ROOM_WIDTH = 16;
 
 byte getRoomX(byte pos) {
   return (pos % ROOM_WIDTH);
@@ -388,13 +390,192 @@ void loop() {
 }
 ````
 
+Now let''s figure out how to move her around!
+
+Similar to the function we created when we wanted to know when a button was pressed. we
+call upon gamby.readInputs again to find out if directions have been pressed. This time though,
+we return a value from our function to let our calling code know what direction we would like
+to go.
+
+Add the following code to the end of your sketch:
+
+````
+const byte LEFT = 1;
+const byte RIGHT = 2;
+const byte UP = 3;
+const byte DOWN = 4;
+
+byte lastInputs = 0;
+
+byte checkForDirectionButtonPress() {
+  gamby.readInputs();
+  if (gamby.inputs != lastInputs) {
+    lastInputs = gamby.inputs;
+    if (gamby.inputs & DPAD_LEFT) {
+      return LEFT;
+    } else if (gamby.inputs & DPAD_RIGHT) {
+      return RIGHT;
+    } else if (gamby.inputs & DPAD_DOWN) {
+      return DOWN;
+    } else if (gamby.inputs & DPAD_UP) {
+      return UP;
+    }
+  }
+  return 0;
+}
+````
+
+As well as knowing which directions have been pressed, we also need to know how the spiderLocation
+changes with each direction. There''s a little bit of maths to this, brace yourself.
+
+````
+byte getRelativePosition(byte pos, byte dir) {
+  if ( dir == LEFT ) {
+    return (pos - 1);
+  } else if ( dir == RIGHT ) {
+    return (pos + 1);
+  } else if ( dir == UP ) {
+    return (pos - ROOM_WIDTH);
+  } else if ( dir == DOWN ) {
+    return (pos + ROOM_WIDTH);
+  } else {
+    return pos; // invalid direction provided.
+  }
+}
+````
+
+We can now use the above functions to actually move our spider around, which forms the basis
+of our 'Game' so far. So, let''s make a 'playGame' function where we loop moving around our spider.
+
+````
+byte spiderDirection = 0;
+bool weAreAlive = true;
+
+void emptyLocation(byte location) {
+  drawBlock()
+}
+
+void emptyLocation(byte pos) {
+  gamby.drawBlock(getScreenX(pos), getScreenY(pos), EMPTY_BLOCK);
+}
+
+void moveSpider() {
+  byte nextSpiderLocation = getRelativePosition(spiderLocation, spiderDirection);
+  emptyLocation(spiderLocation);
+  spiderLocation = nextSpiderLocation;
+  drawSpider();
+}
+
+void playGame() {
+  while (weAreAlive) {
+    byte intendedDirection = checkForDirectionButtonPress();
+    if ( intendedDirection ) {
+      spiderDirection = intendedDirection;
+    }
+    moveSpider();
+    delay(100); // 10 frames per second
+  }
+}
+````
+
+Finally, in our main `loop()` at the top, replace `drawSpider()` with `playGame()` to include our game logic in the main application loop!
+
+Upload, and move that spider!!!
+
+Save :)
 
 
-## Lesson 8 - Colliding with the edges!
+## Lesson 9 - Colliding with the edges!
 
-## Lesson 9 - Making our snake snakey.
+Save your sketch now as 'Lesson9-Colliding'.
 
-## Lesson 10 - Colliding with ourselves
+You've probably noticed that we can move through walls, which isn't very realistic!
+
+Because of the way that we have created our room, we need a special bit of logic to work out if we are trying to escape from it:
+
+````
+bool willWeCollideWithEdge(byte loc, byte dir) {
+  if ( dir == LEFT  && getRoomX(loc) == 0 ) { return true; }
+  if ( dir == RIGHT && getRoomX(loc) == ROOM_WIDTH - 1 ) { return true; }
+  if ( dir == UP    && getRoomY(loc) == 0 ) { return true; }
+  if ( dir == DOWN  && getRoomY(loc) == ROOM_HEIGHT - 1 ) { return true; }
+  return false;
+}
+````
+
+We can now update our moveSpider() function to kill our spider
+if it collides with the wall!
+
+````
+void moveSpider() {
+  byte nextSpiderLocation = getRelativePosition(spiderLocation, spiderDirection);
+  emptyLocation(spiderLocation);
+  if ( willWeCollideWithEdge(spiderLocation, spiderDirection) ) {
+    weAreAlive = false;
+  } else {
+    spiderLocation = nextSpiderLocation;
+    drawSpider();
+  }
+}
+````
+
+We should also probably add a bit of text to tell our player what has happened when the spider dies!
+
+````
+void displayDeathMessage() {
+  gamby.setPos(16,5);
+  gamby.print("SQUASHED!");
+}
+````
+
+And then this after `playGame()` in our main loop:
+
+````
+void loop () {
+  showInitialSplashScreen();
+  waitForButtonPress();
+  drawRoom();
+  playGame();
+  displayDeathMessage();
+  delay(1000);
+  waitForButtonPress();
+}
+````
+
+***OH NOES! WE HAVE A BUG!***
+
+You might be noticing now that restarting the game immmediately kills our spider :(
+
+**Can you think why?**
+
+
+Reason is that we are not resetting our global variables before we call playGame() again, so our spider and direction are the same as they were when we died before.
+
+Let's add a new function that resets these to the start-of-game values:
+
+````
+void initializeGame() {
+  spiderLocation = 104;
+  spiderDirection = 0;
+  weAreAlive = true;
+}
+````
+
+And add this to the `loop()`.
+
+
+
+**Save!!!**
+
+
+
+
+
+
+
+## Lesson 10 - Making a snakey snake.
+
+## Lesson 11 - Colliding with ourselves
 
 --------------------------------------------------------------
 

@@ -98,9 +98,9 @@ bool checkForAnyButtonPressWithDelay(int ms_to_wait) {
 
 byte checkForDirectionButtonPress() {
 
-  if (millis() > lastInputTime) {
+  //if (millis() > lastInputTime) {
     gamby.readInputs();
-    lastInputTime = millis() + INPUT_DELAY;
+    //lastInputTime = millis() + INPUT_DELAY;
     if (gamby.inputs != lastInputs) {
       lastInputs = gamby.inputs;
       if (gamby.inputs & DPAD_LEFT) {
@@ -113,7 +113,7 @@ byte checkForDirectionButtonPress() {
         return UP;
       }
     }
-  }
+  //}
   return 0;
 
 }
@@ -351,5 +351,4 @@ void snakeDeath() {
   snakeIsAlive = 1;
 }
 
-void showScore() {
-}
+
