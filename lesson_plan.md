@@ -198,7 +198,7 @@ Now lets make our splash screen. Put the following code in it's own section at t
 
 ````
 void showInitialSplashScreen() {
-  gamby.clearDisplay();
+  gamby.clearScreen();
   delay(500);
 
   gamby.setPos(0,2);
@@ -525,6 +525,7 @@ We should also probably add a bit of text to tell our player what has happened w
 void displayDeathMessage() {
   gamby.setPos(16,5);
   gamby.print("SQUASHED!");
+  tone(9, 110, 500);
 }
 ````
 
@@ -551,7 +552,7 @@ You might be noticing now that restarting the game immmediately kills our spider
 
 Reason is that we are not resetting our global variables before we call playGame() again, so our spider and direction are the same as they were when we died before.
 
-Let's add a new function that resets these to the start-of-game values:
+Let''s add a new function that resets these to the start-of-game values:
 
 ````
 void initializeGame() {
@@ -568,16 +569,352 @@ And add this to the `loop()`.
 **Save!!!**
 
 
+## Lesson 11 - Eating fruit.
+
+We need something to eat. We''re a hungry spider (and when we''re a snake, we need something to
+make us get longer!)
+
+So, lets plop some fruit around that we have to munch. This also brings the concept of scoring
+nicely into out game!
+
+We need to pick a square for the fruit to be placed, and of course it can''t go where something
+is already. At the moment, that''s just our spider -- but it''ll get a bit more complicated when
+we have a long snake!
+
+````
+byte fruitSquare;
+````
+
+````
+byte pickFruitSquare() {
+  byte potentialFruitSquare = random(ROOM_HEIGHT*ROOM_WIDTH);
+  while ( inForbiddenLocation(potentialFruitSquare) ) {
+    potentialFruitSquare = random(ROOM_HEIGHT*ROOM_WIDTH); // pick another
+  }
+  return potentialFruitSquare;
+}
+
+bool inForbiddenLocation(byte loc) {
+  if ( loc == spiderLocation ) { return true; }
+  return false;
+}
+
+void drawFruit() {
+  fruitSquare = pickFruitSquare();
+  gamby.drawBlock(getScreenX(fruitSquare), getScreenY(fruitSquare), 1);
+}
+````
+
+And let''s draw a fruit into our game:
+
+````
+void loop () {
+  showInitialSplashScreen();
+  waitForButtonPress();
+  initializeGame();
+  drawRoom();
+  drawFruit();
+  playGame();
+  displayDeathMessage();
+  delay(1000);
+  waitForButtonPress();
+}
+````
 
 
+Upload this sketch, you should now be able to run over the fruit, and eat it.
+
+Thinking about it though, we haven't added any code to say that we've collided with the fruit!
+
+***We''re actually just erasing it as we pass over it :(***
+
+Let's add a bit of logic to actually munch the fruit!
 
 
+Add this code snippet to the end of your `moveSpider()` function:
+
+```
+  if ( spiderLocation == fruitSquare ) {
+    score += 10;
+    tone(9, 440, 10);
+    drawFruit();
+    updateInfoDisplay();
+  } 
+```
+
+We also want to make our `updateInfoDisplay()` function, and define our variables for scoring:
+
+```
+const byte SCOREPOS_X = 74;
+int score = 0;
+int hiscore = 0;
+```
+
+```
+void updateInfoDisplay() {
+  if ( score > hiscore ) {
+    hiscore = score;
+  }
+  gamby.setPos(SCOREPOS_X,0);
+  gamby.print("Hi");
+  gamby.setPos(SCOREPOS_X,1);
+  gamby.print(hiscore);
+  gamby.setPos(SCOREPOS_X,5);
+  gamby.print("Score");
+  gamby.setPos(SCOREPOS_X,7);
+  gamby.print(score);
+}
+````
+
+And of course, now we have a score, we need to reset it (but not the hiscore!) when we initialize the game:
+
+````
+void initializeGame() {
+  spiderLocation = 104;
+  spiderDirection = 0;
+  weAreAlive = true;
+  score = 0;
+}
+````
+
+
+Hit SAVE!
 
 ## Lesson 10 - Making a snakey snake.
 
+Save your sketch as 'Lesson10-SnakeySnake'
+
+Ok, we''re now onto the tricky bit. Sorry about that!
+
+Firstly, let''s think a little about the snake and what it means for updating our screen:
+
+* The snake head moves onto a different square.
+* The snake body stays in the same place
+* The snake tail moves onwards; old location gets erased.
+
+If we eat a fruit, then the head moves on, but the tail remains in place.
+
+Here it hopefully becomes a little clearer as to why we reference the locations as a simple byte rather
+than x and y co-ordinates: It makes tracking the snake lots easier!
+
+What we are going to do, is create what is called a **ring buffer** for the snake.
+
+Think of a set of boxes in a row:
+
+      0   1   2   3   4   5   6   7   8   9   10  11  12  13  14  15  16  17
+    -------------------------------------------------------------------------
+    |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |
+    -------------------------------------------------------------------------
+
+In our case above, we have 18 'positions' in our set of boxes, accessible via references 0 to 17.
+
+What we''ll be doing is storing the snake head and tail positions in these boxes, and
+keeping an idea of where each of them are.
+
+So, let''s say our snake head is at location 120 and the tail at 119, just to the left of it.
+
+      0   1   2   3   4   5   6   7   8   9   10  11  12  13  14  15  16  17
+    -------------------------------------------------------------------------
+    |   |   |   |   |   |   |   |   |119|120|   |   |   |   |   |   |   |   |
+    -------------------------------------------------------------------------
+    snakeTailPos == 8
+    snakeHeadPos == 9
+
+Now, when our snake moves right, the head moves to position 121, and the tail to position 120:
+
+      0   1   2   3   4   5   6   7   8   9   10  11  12  13  14  15  16  17
+    -------------------------------------------------------------------------
+    |   |   |   |   |   |   |   |   |   |120|121|   |   |   |   |   |   |   |
+    -------------------------------------------------------------------------
+    snakeTailPos == 9
+    snakeHeadPos == 10
+
+But notice what happened here. We stored the new head location in position 10, and moved the
+pointers to the positions up one. The value in position 9 is unaffected, but is now the tail
+of our snake!
+
+Now imagine we''ve eaten some fruit. We want the snake to grow longer. Moving up now we
+move the head to position (121-16) == 105.
+
+      0   1   2   3   4   5   6   7   8   9   10  11  12  13  14  15  16  17
+    -------------------------------------------------------------------------
+    |   |   |   |   |   |   |   |   |   |120|121|105|   |   |   |   |   |   |
+    -------------------------------------------------------------------------
+    snakeTailPos == 9
+    snakeHeadPos == 11
+
+The trick here is that while we move the snake head position pointer onwards, we simply do
+not move the tail pointer.
+
+**The multi-box structure we have been using above is called an ARRAY. They are really useful.**
+
+So, now for some code implementing the above:
+
+Define our buffer array, and some variables/constants to help us manage it:
+
+````
+const byte SNAKE_HEAD_BLOCK = 1;
+const byte INITIAL_HEAD_SQUARE = 120;
+const byte INITIAL_TAIL_SQUARE = 119;
+const byte SNAKE_BUFFER_SIZE = 64;
+const byte MAX_SNAKE_LENGTH = 62;
+byte snakeBuffer[SNAKE_BUFFER_SIZE];
+byte snakeHeadBufferPosition;
+byte snakeTailBufferPosition;
+byte snakeDirection;
+````
+
+And update our initializeGame function to manage the snake:
+
+````
+void initializeGame() {
+  snakeTailBufferPosition = 0;
+  snakeHeadBufferPosition = 1;
+  snakeBuffer[snakeTailBufferPosition] = INITIAL_TAIL_SQUARE;
+  snakeBuffer[snakeHeadBufferPosition] = INITIAL_HEAD_SQUARE;
+  weAreAlive = true;
+  score = 0;
+}
+````
+
+And we want to make an updated version of our moveSpider code that moves the snake instead:
+
+````
+void drawSnakeHead() {
+  byte headSquare = snakeBuffer[snakeHeadBufferPosition];
+  gamby.drawBlock(getScreenX(headSquare), getScreenY(headSquare), SNAKE_HEAD_BLOCK);
+}
+
+void moveSnake() {
+  byte snakeHeadSquare = snakeBuffer[snakeHeadBufferPosition];
+  byte nextHeadSquare = getRelativePosition(snakeHeadSquare, snakeDirection);
+  
+  if ( willWeCollideWithEdge(snakeHeadSquare, snakeDirection) ) {
+    weAreAlive = false;
+  } else {
+
+    if ( nextHeadSquare == fruitSquare ) {
+      score += 10;
+      tone(9, 440, 10);
+      drawFruit();
+      updateInfoDisplay();
+    } else {
+      emptyLocation(snakeBuffer[snakeTailBufferPosition]);
+      snakeTailBufferPosition = getRealBufferPosition(snakeTailBufferPosition + 1);
+    }
+    updateSnakeHeadSquare(nextHeadSquare);
+    drawSnakeHead();
+  }
+}
+
+void updateSnakeHeadSquare(byte snakeHeadSquare) {
+  snakeHeadBufferPosition = getRealBufferPosition(snakeHeadBufferPosition + 1);
+  snakeBuffer[snakeHeadBufferPosition] = snakeHeadSquare;
+}
+
+byte getRealBufferPosition(byte bufPos) {
+  return ( bufPos ) % SNAKE_BUFFER_SIZE;
+}
+````
+
+Note that we have a function being called - `getRealBufferPosition()`. This is a little bit of magic to handle the case that the buffer is of a fixed size, so handles the cases where our snakeHead/Tail BufferPosition moves off the end of the array and to the start.
+
+
+Finally, to hook all this in, replace moveSpider in our main game:
+
+````
+void playGame() {
+  while (weAreAlive) {
+    byte intendedDirection = checkForDirectionButtonPress();
+    if ( intendedDirection ) {
+      snakeDirection = intendedDirection;
+    }
+    moveSnake();
+    delay(100);
+  }
+}
+````
+
+
+
+
 ## Lesson 11 - Colliding with ourselves
 
+You might have noticed a couple of problems with our snake.
+
+1. We can reverse over ourself!
+2. We can move through ourself!
+
+
+Ok, let's tackle not reversing:
+
+```
+bool reversingDirection(byte actualDirection, byte intendedDirection) {
+  if ( actualDirection == LEFT && intendedDirection == RIGHT ) { return true; }
+  if ( actualDirection == RIGHT && intendedDirection == LEFT ) { return true; }
+  if ( snakeDirection == UP && intendedDirection == DOWN )     { return true; }
+  if ( snakeDirection == DOWN && intendedDirection == UP )     { return true; }
+  return false;
+}
+```
+
+And so we then insert that into our `moveSnake()` code:
+
+```
+...
+ if ( intendedDirection ) {
+      if (! reversingDirection(snakeDirection, intendedDirection) ) {
+        snakeDirection = intendedDirection;
+      }
+    }
+ }
+```
+
+But how do we check that we're not crashing into ourself?
+
+Well, let's just check what positions are in our snakeBuffer!
+
+````
+byte snakeLength() {
+  if ( snakeHeadBufferPosition > snakeTailBufferPosition ) {
+    return snakeHeadBufferPosition - snakeTailBufferPosition + 1;
+  } else {
+    return ( snakeHeadBufferPosition + SNAKE_BUFFER_SIZE ) - snakeTailBufferPosition + 1;
+  }
+}
+
+bool checkIfSquareIsWithinSnake(byte square) {
+  byte i = 0;
+  while ( i < snakeLength() ) {
+    if ( square == snakeBuffer[getRealBufferPosition(snakeTailBufferPosition + i)] ) {
+      return true;
+    }
+    i++;
+  }
+  return false;
+}
+````
+
+And then insert some code to check if we've collided in the main `moveSnake()` function:
+
+````
+
+  if ( willWeCollideWithEdge(snakeHeadSquare, snakeDirection) ) {
+    weAreAlive = false;
+  } else if ( checkIfSquareIsWithinSnake(nextHeadSquare) ) {
+    weAreAlive = false;
+  } else {
+     ...  
+````
+
+
+
 --------------------------------------------------------------
+
+
+
+
+
 
 ## Further Improvements...
 
